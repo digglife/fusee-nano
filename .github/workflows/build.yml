@@ -47,7 +47,8 @@ jobs:
           fi
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: svenstaro/upload-release-action@v2
         with:
-          name: fusee-nano-${{ matrix.arch }}
-          path: fusee-nano
+          asset_name: fusee-nano-${{ matrix.arch }}
+          file: fusee-nano
+          tag: ${{ github.ref }}
