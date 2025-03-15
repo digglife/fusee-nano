@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64, armv7]
+        arch: [amd64, arm64, armv7, armv8]
         include:
           - arch: amd64
             gcc_prefix:
@@ -18,6 +18,8 @@ jobs:
             gcc_prefix: aarch64-linux-gnu
           - arch: armv7
             gcc_prefix: arm-linux-gnueabihf
+          - arch: armv8
+            gcc_prefix: aarch64-linux-gnu
 
     steps:
       - uses: actions/checkout@v3
@@ -25,14 +27,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
+          # g++ is pre-installed for amd64, we only need those for cross-compilation
           if [ -n "${{ matrix.gcc_prefix }}" ]; then
               sudo apt-get install -y g++-${{ matrix.gcc_prefix }}
-          else
-            sudo apt-get install -y g++
           fi
 
       - name: Build xxd
         run: |
+          # -n option is not available for the xxd of Ubuntu, so build it from source
           git clone https://github.com/ckormanyos/xxd.git
           cd xxd
           g++ -x c -std=c17 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion src/xxd.c -o /usr/local/bin/xxd
@@ -45,10 +47,10 @@ jobs:
           else
             make CC=gcc
           fi
+          zip fusee-nano-${{ matrix.arch }}.zip fusee-nano
 
       - name: Upload artifact
         uses: svenstaro/upload-release-action@v2
         with:
-          asset_name: fusee-nano-${{ matrix.arch }}
-          file: fusee-nano
+          file: fusee-nano-${{ matrix.arch }}.zip
           tag: ${{ github.ref }}
