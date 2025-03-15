@@ -1,0 +1,53 @@
+name: Build fusee-nano
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64, armv7]
+        include:
+          - arch: amd64
+            gcc_prefix:
+          - arch: arm64
+            gcc_prefix: aarch64-linux-gnu
+          - arch: armv7
+            gcc_prefix: arm-linux-gnueabihf
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          if [ -n "${{ matrix.gcc_prefix }}" ]; then
+              sudo apt-get install -y g++-${{ matrix.gcc_prefix }}
+          else
+            sudo apt-get install -y g++
+          fi
+
+      - name: Build xxd
+        run: |
+          git clone https://github.com/ckormanyos/xxd.git
+          cd xxd
+          g++ -x c -std=c17 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion src/xxd.c -o /usr/local/bin/xxd
+
+      - name: Build
+        run: |
+          make clean
+          if [ -n "${{ matrix.gcc_prefix }}" ]; then
+            make CC=${{ matrix.gcc_prefix }}-gcc
+          else
+            make CC=gcc
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: fusee-nano-${{ matrix.arch }}
+          path: fusee-nano
